@@ -192,7 +192,7 @@
   <!-- Welcome + Filters -->
   <div class="top-row">
     <div class="welcome">
-      <h2>Selamat datang, <span id="greetName">Puan Hidayah</span></h2>
+      <h2>Selamat datang, <span id="greetName">AFIDA BINTI KAMARUDIN</span></h2>
       <p>Berikut adalah ringkasan pencapaian dan penglibatan PSH anda.</p>
     </div>
     <div class="filters">
@@ -543,29 +543,11 @@ function kemaskiniDropdownPensyarah() {
   for (var j = 0; j < senarai.length; j++) {
     var opt = document.createElement("option");
     opt.value = senarai[j];
-    // Format nama pendek
-    opt.text = formatNama(senarai[j]);
+    opt.text  = senarai[j]; // Papar nama penuh terus
     sel.appendChild(opt);
   }
   // Kekalkan pilihan sebelum jika masih ada
   if (nilaiSemasa) sel.value = nilaiSemasa;
-}
-
-function formatNama(nama) {
-  var prefix = ["Ts.", "Tc.", "Dr.", "Prof.", "Datin", "Dato"];
-  for (var p = 0; p < prefix.length; p++) {
-    if (nama.indexOf(prefix[p]) === 0) return prefix[p] + " " + toTitleCase(nama.substring(prefix[p].length).trim());
-  }
-  // Ambil 2 perkataan pertama sahaja untuk dropdown
-  var parts = nama.split(" ");
-  if (parts.length >= 3) return parts[0] + " " + parts[1] + " " + parts[2];
-  return nama;
-}
-
-function toTitleCase(str) {
-  return str.replace(/\w\S*/g, function(w) {
-    return w.charAt(0).toUpperCase() + w.substr(1).toLowerCase();
-  });
 }
 
 // Data statik sebagai fallback
@@ -626,10 +608,7 @@ var DATA_STATIK = [
 ];
 
 function getDisplayName(fullName) {
-  var sel = document.getElementById("filterPensyarah");
-  for (var i = 0; i < sel.options.length; i++) {
-    if (sel.options[i].value === fullName) return sel.options[i].text;
-  }
+  // Papar nama penuh tanpa sebarang ubahan
   return fullName;
 }
 
@@ -638,8 +617,8 @@ function applyFilter() {
   var peranan   = document.getElementById("filterPeranan").value;
   var cari      = document.getElementById("searchBox").value.toLowerCase();
 
-  // Kemaskini nama greeting
-  document.getElementById("greetName").textContent = getDisplayName(pensyarah);
+  // Kemaskini nama greeting — papar nama penuh
+  document.getElementById("greetName").textContent = pensyarah;
 
   var totalJam = 0, totalPeserta = 0, totalKursus = 0;
   var jamP = 0, pesertaP = 0;
