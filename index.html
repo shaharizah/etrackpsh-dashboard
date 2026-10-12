@@ -181,6 +181,11 @@
   </div>
 </div>
 
+<!-- LOADING STATUS -->
+<div id="loadingStatus" style="display:none;background:#dbeafe;color:#1d4ed8;padding:10px 32px;font-size:13px;font-weight:600;border-bottom:1px solid #bfdbfe;">
+  &#8635; Sedang memuatkan data terkini dari Google Sheets...
+</div>
+
 <!-- CONTENT -->
 <div class="content">
 
@@ -392,9 +397,177 @@
 
 <script>
 // ══════════════════════════════════════════════
-// DATA SEBENAR DARI eTrackPSH 2026.xlsx
+// TETAPAN
 // ══════════════════════════════════════════════
-var DATA = [
+var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQAuprG2IAhhOtehdy8_knZPT-8crsVbz0VMXKTGJll4BxXF9-mGtdx0P0VGrujAK0EMqJVe88Ehmun/pub?gid=1958949715&single=true&output=csv";
+
+var TARGET_JAM     = 56;
+var TARGET_PESERTA = 89;
+var ROWS_PER_PAGE  = 5;
+var currentPage    = 1;
+var filteredData   = [];
+var DATA           = [];
+
+// ── INDEKS LAJUR SHEET MASTER ──
+// A=0  B=1  C=2  D=3  E=4  F=5  G=6  H=7  I=8
+// J=9  K=10 L=11 M=12 N=13 O=14 P=15 Q=16 R=17
+// S=18 T=19 U=20 V=21 W=22 X=23 Y=24 Z=25
+// AB=27 AD=29 AE=30 AF=31 AG=32 AH=33
+
+function parseCSV(text) {
+  var lines = text.split("\n");
+  var result = [];
+  // Baris 0 = header, mulai dari baris 1
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV dengan sokongan tanda petik
+    var cols = [];
+    var cur = "", inQ = false;
+    for (var c = 0; c < line.length; c++) {
+      var ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+
+    var namaKursus = (cols[4] || "").trim();
+    if (!namaKursus) continue;
+
+    var pengajar1 = (cols[9]  || "").trim();
+    var pengajar2 = (cols[12] || "").trim();
+    var pengajar3 = (cols[15] || "").trim();
+    var pembantu1 = (cols[18] || "").trim();
+    var pembantu2 = (cols[21] || "").trim();
+    var pembantu3 = (cols[24] || "").trim();
+    var urusetia  = (cols[31] || "").trim();
+
+    var jamP1  = parseFloat(cols[10] || 0) || 0;
+    var jamP2  = parseFloat(cols[13] || 0) || 0;
+    var jamP3  = parseFloat(cols[16] || 0) || 0;
+    var jamPb1 = parseFloat(cols[19] || 0) || 0;
+    var jamPb2 = parseFloat(cols[22] || 0) || 0;
+    var jamPb3 = parseFloat(cols[25] || 0) || 0;
+    var jamU   = parseFloat(cols[32] || 0) || 0;
+
+    var pesP1  = parseFloat(cols[11] || 0) || 0;
+    var pesP2  = parseFloat(cols[14] || 0) || 0;
+    var pesP3  = parseFloat(cols[17] || 0) || 0;
+    var pesPb1 = parseFloat(cols[20] || 0) || 0;
+    var pesPb2 = parseFloat(cols[23] || 0) || 0;
+    var pesPb3 = parseFloat(cols[26] || 0) || 0;
+    var pesU   = parseFloat(cols[33] || 0) || 0;
+    var totalPeserta = parseFloat(cols[27] || 0) || 0;
+
+    // Kumpul senarai pengajar, pembantu, urus
+    var listPengajar = [];
+    if (pengajar1 && pengajar1 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar1 !== "SILA PILIH NAMA") listPengajar.push(pengajar1);
+    if (pengajar2 && pengajar2 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar2 !== "SILA PILIH NAMA") listPengajar.push(pengajar2);
+    if (pengajar3 && pengajar3 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar3 !== "SILA PILIH NAMA") listPengajar.push(pengajar3);
+
+    var listPembantu = [];
+    if (pembantu1 && pembantu1 !== "SILA PILIH NAMA") listPembantu.push(pembantu1);
+    if (pembantu2 && pembantu2 !== "SILA PILIH NAMA") listPembantu.push(pembantu2);
+    if (pembantu3 && pembantu3 !== "SILA PILIH NAMA") listPembantu.push(pembantu3);
+
+    var listUrus = [];
+    if (urusetia && urusetia !== "SILA PILIH NAMA") listUrus.push(urusetia);
+
+    result.push({
+      kursus: namaKursus,
+      tarikh: (cols[2] || "").trim(),
+      bulan:  (cols[1] || "").trim(),
+      pengajar: listPengajar,
+      pembantu: listPembantu,
+      urus:     listUrus,
+      jamPengajar:  jamP1 + jamP2 + jamP3,
+      jamPembantu:  jamPb1 + jamPb2 + jamPb3,
+      jamUrus:      jamU,
+      pesertaPengajar: pesP1 + pesP2 + pesP3,
+      pesertaPembantu: pesPb1 + pesPb2 + pesPb3,
+      pesertaUrus:     pesU,
+      totalPeserta:    totalPeserta
+    });
+  }
+  return result;
+}
+
+function muatData() {
+  var status = document.getElementById("loadingStatus");
+  if (status) status.style.display = "block";
+
+  // Guna CORS proxy untuk fetch Google Sheets CSV
+  var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(CSV_URL);
+
+  fetch(proxyUrl)
+    .then(function(r) {
+      if (!r.ok) throw new Error("Gagal muat data");
+      return r.text();
+    })
+    .then(function(text) {
+      DATA = parseCSV(text);
+      kemaskiniDropdownPensyarah();
+      if (status) status.style.display = "none";
+      applyFilter();
+    })
+    .catch(function(err) {
+      if (status) {
+        status.innerHTML = "&#9888; Gagal sambung ke Google Sheets. Menggunakan data tempatan.";
+        status.style.color = "#b45309";
+        setTimeout(function() { if (status) status.style.display = "none"; }, 4000);
+      }
+      // Fallback — gunakan data statik lama
+      DATA = DATA_STATIK;
+      kemaskiniDropdownPensyarah();
+      applyFilter();
+    });
+}
+
+function kemaskiniDropdownPensyarah() {
+  // Kumpul semua nama unik dari data
+  var namaSet = {};
+  for (var i = 0; i < DATA.length; i++) {
+    var d = DATA[i];
+    d.pengajar.forEach(function(n) { if (n) namaSet[n] = true; });
+    d.pembantu.forEach(function(n) { if (n) namaSet[n] = true; });
+    d.urus.forEach(function(n)     { if (n) namaSet[n] = true; });
+  }
+  var senarai = Object.keys(namaSet).sort();
+  var sel = document.getElementById("filterPensyarah");
+  var nilaiSemasa = sel.value;
+  sel.innerHTML = "";
+  for (var j = 0; j < senarai.length; j++) {
+    var opt = document.createElement("option");
+    opt.value = senarai[j];
+    // Format nama pendek
+    opt.text = formatNama(senarai[j]);
+    sel.appendChild(opt);
+  }
+  // Kekalkan pilihan sebelum jika masih ada
+  if (nilaiSemasa) sel.value = nilaiSemasa;
+}
+
+function formatNama(nama) {
+  var prefix = ["Ts.", "Tc.", "Dr.", "Prof.", "Datin", "Dato"];
+  for (var p = 0; p < prefix.length; p++) {
+    if (nama.indexOf(prefix[p]) === 0) return prefix[p] + " " + toTitleCase(nama.substring(prefix[p].length).trim());
+  }
+  // Ambil 2 perkataan pertama sahaja untuk dropdown
+  var parts = nama.split(" ");
+  if (parts.length >= 3) return parts[0] + " " + parts[1] + " " + parts[2];
+  return nama;
+}
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, function(w) {
+    return w.charAt(0).toUpperCase() + w.substr(1).toLowerCase();
+  });
+}
+
+// Data statik sebagai fallback
+var DATA_STATIK = [
   {kursus:"KURSUS ASAS PEMBUATAN ROTI",tarikh:"17.01.2026",bulan:"JANUARI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NUR ANIS IZZATI BINTI MAT NOOR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:0,jamPembantu:5,jamUrus:5,pesertaPengajar:0,pesertaPembantu:12,pesertaUrus:11,totalPeserta:23},
   {kursus:"KURSUS GREEN TECHNOLOGY - SIRI 1: REKABENTUK TEKNOLOGI SOLAR",tarikh:"20.01.2026",bulan:"JANUARI",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:15,pesertaPembantu:8,pesertaUrus:2,totalPeserta:25},
   {kursus:"KURSUS GREEN TECHNOLOGY - SIRI 2: PEMASANGAN SISTEM SOLAR",tarikh:"21.01.2026",bulan:"JANUARI",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:15,pesertaPembantu:8,pesertaUrus:2,totalPeserta:25},
@@ -449,12 +622,6 @@ var DATA = [
   {kursus:"NOTEBOOKLM PRAKTIKAL INTENSIF",tarikh:"01.08.2026",bulan:"OGOS",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:[],urus:["SUHAILIE BINTI DAUD"],jamPengajar:1,jamPembantu:0,jamUrus:1,pesertaPengajar:138,pesertaPembantu:0,pesertaUrus:34,totalPeserta:172},
   {kursus:"KURSUS ASAS AUGMENTED REALITY (AR)",tarikh:"02.08.2026",bulan:"OGOS",pengajar:["SUHAILIE BINTI DAUD"],pembantu:[],urus:["NURZAIMA BINTI MAHMOD"],jamPengajar:1,jamPembantu:0,jamUrus:1,pesertaPengajar:114,pesertaPembantu:0,pesertaUrus:29,totalPeserta:143}
 ];
-
-var TARGET_JAM = 56;
-var TARGET_PESERTA = 89;
-var ROWS_PER_PAGE = 5;
-var currentPage = 1;
-var filteredData = [];
 
 function getDisplayName(fullName) {
   var sel = document.getElementById("filterPensyarah");
@@ -661,8 +828,8 @@ document.getElementById("btnCetak").onclick = function(e) {
   muatTurunLaporan();
 };
 
-// Muat pada permulaan
-applyFilter();
+// Muat data dari Google Sheets pada permulaan
+muatData();
 </script>
 </body>
 </html>
