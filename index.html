@@ -84,7 +84,8 @@
   .badge.warn { background: #fef3c7; color: #b45309; }
   .badge.ok   { background: #dcfce7; color: #15803d; }
   .progress-track { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
-  .progress-fill  { height: 100%; border-radius: 99px; background: #14b8a6; }
+  .progress-fill  { height: 100%; border-radius: 99px; background: #14b8a6; transition: background 0.3s; }
+  .progress-fill.pf-ok { background: #16a34a; }
   .progress-foot  { display: flex; justify-content: space-between; font-size: 11px; }
   .pf-pct  { color: #0d9488; font-weight: 700; }
   .pf-baki { color: #94a3b8; }
@@ -240,13 +241,6 @@
         </select>
       </div>
       <div class="filter-group">
-        <div class="filter-label">Tahun</div>
-        <select style="min-width:80px;">
-          <option>2026</option>
-          <option>2025</option>
-        </select>
-      </div>
-      <div class="filter-group">
         <div class="filter-label">Peranan</div>
         <select id="filterPeranan" onchange="applyFilter()">
           <option value="semua">Semua peranan</option>
@@ -306,7 +300,7 @@
             <div><div class="kpi-name">Kursus Disertai</div></div>
           </div>
           <div class="kpi-count" id="kursusCount">0</div>
-          <div class="kpi-count-sub">kursus sepanjang tahun 2026</div>
+          <div class="kpi-count-sub" id="kursusSubtitle">kursus sepanjang tahun ini</div>
         </div>
       </div>
 
@@ -402,13 +396,15 @@
 // TETAPAN
 // ══════════════════════════════════════════════
 var CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQAuprG2IAhhOtehdy8_knZPT-8crsVbz0VMXKTGJll4BxXF9-mGtdx0P0VGrujAK0EMqJVe88Ehmun/pub?gid=1958949715&single=true&output=csv";
+var KPI_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQAuprG2IAhhOtehdy8_knZPT-8crsVbz0VMXKTGJll4BxXF9-mGtdx0P0VGrujAK0EMqJVe88Ehmun/pub?gid=1212434326&single=true&output=csv";
 
-var TARGET_JAM     = 56;
-var TARGET_PESERTA = 89;
+var DEFAULT_TARGET_JAM     = 56;
+var DEFAULT_TARGET_PESERTA = 89;
 var ROWS_PER_PAGE  = 5;
 var currentPage    = 1;
 var filteredData   = [];
 var DATA           = [];
+var DATA_KPI       = {}; // { "NAMA PENSYARAH": { jam, peserta, targetJam, targetPeserta } }
 
 // ── INDEKS LAJUR SHEET MASTER (berdasarkan struktur sebenar) ──
 // A=0  B=1(Bulan)  C=2(Tarikh)  D=3(Masa)  E=4(Nama Kursus)
@@ -548,34 +544,97 @@ function parseCSV(text) {
   return result;
 }
 
+// ── PARSE TAB KPIPensyarah ──
+// 2 baris header, data bermula baris ke-3
+// Col 1=Nama, Col 16=JumlahJam, Col 17=JumlahPeserta, Col 20=Nota (target khas)
+function parseCsvLine(line) {
+  var cols = [], cur = "", inQ = false;
+  for (var c = 0; c < line.length; c++) {
+    var ch = line[c];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ""; }
+    else { cur += ch; }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+// Struktur tab KPIPensyarah (A–T):
+// Col 0=BIL  Col 1=NAMA
+// Col 2=P1Jam  Col 3=P1Pes  Col 4=P2Jam  Col 5=P2Pes  Col 6=P3Jam  Col 7=P3Pes
+// Col 8=Pb1Jam Col 9=Pb1Pes Col 10=Pb2Jam Col 11=Pb2Pes Col 12=Pb3Jam Col 13=Pb3Pes
+// Col 14=UrusJam  Col 15=UrusPes
+// Col 16=JumlahJam(Q)  Col 17=JumlahPeserta(R)
+// Col 18=PctKPIJam(S)  Col 19=PctKPIPeserta(T)
+// Sheet ada 2 baris header (baris 0=tajuk peranan, baris 1=sub-header JUM JAM/PESERTA)
+// Data bermula baris 2. Baris data sah = col[0] adalah nombor (BIL).
+function parseKPI(text) {
+  var lines = text.split("\n");
+  var result = {};
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cols = parseCsvLine(line);
+    // Baris data sah: col[0] mestilah nombor bulat (BIL)
+    var bil = (cols[0] || "").trim();
+    if (!bil || isNaN(parseInt(bil, 10))) continue;
+    var nama = (cols[1] || "").trim();
+    if (!nama) continue;
+
+    var jam     = parseFloat(cols[16] || 0) || 0;
+    var peserta = parseFloat(cols[17] || 0) || 0;
+
+    result[nama] = {
+      jam:           jam,
+      peserta:       peserta,
+      targetJam:     DEFAULT_TARGET_JAM,
+      targetPeserta: DEFAULT_TARGET_PESERTA
+    };
+  }
+  return result;
+}
+
 function muatData() {
   var status = document.getElementById("loadingStatus");
   if (status) status.style.display = "block";
 
-  // Guna CORS proxy untuk fetch Google Sheets CSV
-  var proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(CSV_URL);
+  var fetchMaster = fetch(CSV_URL).then(function(r) { if (!r.ok) throw new Error("master"); return r.text(); });
+  var fetchKPI    = fetch(KPI_URL).then(function(r) { if (!r.ok) throw new Error("kpi");    return r.text(); });
 
-  fetch(proxyUrl)
-    .then(function(r) {
-      if (!r.ok) throw new Error("Gagal muat data");
-      return r.text();
-    })
-    .then(function(text) {
-      DATA = parseCSV(text);
+  Promise.all([fetchMaster, fetchKPI])
+    .then(function(results) {
+      DATA     = parseCSV(results[0]);
+      DATA_KPI = parseKPI(results[1]);
       kemaskiniDropdownPensyarah();
       if (status) status.style.display = "none";
       applyFilter();
     })
-    .catch(function(err) {
-      if (status) {
-        status.innerHTML = "&#9888; Gagal sambung ke Google Sheets. Menggunakan data tempatan.";
-        status.style.color = "#b45309";
-        setTimeout(function() { if (status) status.style.display = "none"; }, 4000);
-      }
-      // Fallback — gunakan data statik lama
-      DATA = DATA_STATIK;
-      kemaskiniDropdownPensyarah();
-      applyFilter();
+    .catch(function() {
+      // Cuba ambil sekurang-kurangnya tab KPI sahaja
+      fetch(KPI_URL)
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+          DATA_KPI = parseKPI(text);
+          DATA = DATA_STATIK;
+          kemaskiniDropdownPensyarah();
+          if (status) {
+            status.innerHTML = "&#9888; Gagal sambung sepenuhnya. Rekod kursus menggunakan data tempatan.";
+            status.style.color = "#b45309";
+            setTimeout(function() { if (status) status.style.display = "none"; }, 4000);
+          }
+          applyFilter();
+        })
+        .catch(function() {
+          DATA = DATA_STATIK;
+          DATA_KPI = {};
+          kemaskiniDropdownPensyarah();
+          if (status) {
+            status.innerHTML = "&#9888; Gagal sambung ke Google Sheets. Menggunakan data tempatan.";
+            status.style.color = "#b45309";
+            setTimeout(function() { if (status) status.style.display = "none"; }, 4000);
+          }
+          applyFilter();
+        });
     });
 }
 
@@ -629,7 +688,7 @@ var DATA_STATIK = [
   {kursus:"KURSUS ANEKA KEK SLICE",tarikh:"26.04.2026",bulan:"APRIL",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NURZAIMA BINTI MAHMOD","NUR ANIS IZZATI BINTI MAT NOOR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:0,jamPembantu:5,jamUrus:5,pesertaPengajar:0,pesertaPembantu:4,pesertaUrus:4,totalPeserta:13},
   {kursus:"KURSUS ASAS KOMUNIKASI UNTUK INDUSTRI",tarikh:"28.04.2026",bulan:"APRIL",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["RASIDAH BINTI MOHD ZOHOR"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
   {kursus:"KURSUS PENGHASILAN KOMIK & VIDEO ANIMASI AI (SIRI 2)",tarikh:"25.04.2026",bulan:"APRIL",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:["SUHAILIE BINTI DAUD"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:8,jamPembantu:8,jamUrus:8,pesertaPengajar:6,pesertaPembantu:3,pesertaUrus:1,totalPeserta:10},
-  {kursus:"KURSUS KUASAI PENGGUNAAN KALKULATOR SAINTIFIK",tarikh:"26.04.2026",bulan:"APRIL",pengajar:["AFIDA BINTI KAMARUDIN"],pembantu:[],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:0,jamPembantu:0,jamUrus:5,pesertaPengajar:0,pesertaPembantu:0,pesertaUrus:12,totalPeserta:12},
+  {kursus:"KURSUS KUASAI PENGGUNAAN KALKULATOR SAINTIFIK",tarikh:"26.04.2026",bulan:"APRIL",pengajar:["AFIDA BINTI KAMARUDIN"],pembantu:[],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:0,jamUrus:5,pesertaPengajar:12,pesertaPembantu:0,pesertaUrus:12,totalPeserta:12},
   {kursus:"KURSUS DIY FELT KEYCHAIN",tarikh:"25.04.2026",bulan:"APRIL",pengajar:["HADIZAH BINTI MOHD KASSIM"],pembantu:[],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:0,jamUrus:5,pesertaPengajar:12,pesertaPembantu:0,pesertaUrus:3,totalPeserta:15},
   {kursus:"KURSUS LASER ENGRAVING",tarikh:"29.04.2026",bulan:"APRIL",pengajar:["SITI MASTURA AINAA BINTI MOKHTAR"],pembantu:["AHMAD SHAWAL BIN ALI"],urus:["HADIZAH BINTI MOHD KASSIM"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:10,pesertaPembantu:5,pesertaUrus:2,totalPeserta:17},
   {kursus:"E-CERTIFICATE DESIGN AND MANAGEMENT COURSE",tarikh:"29.04.2026",bulan:"APRIL",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["NURZAIMA BINTI MAHMOD"],urus:["MUHAMMAD HAFIZ BIN ISMAIL"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:18,pesertaPembantu:9,pesertaUrus:3,totalPeserta:30},
@@ -672,7 +731,12 @@ function applyFilter() {
   // Kemaskini nama greeting — papar nama penuh
   document.getElementById("greetName").textContent = pensyarah;
 
-  var totalJam = 0, totalPeserta = 0, totalKursus = 0;
+  // Ambil data KPI sebenar dari tab KPIPensyarah jika ada
+  var kpiData       = DATA_KPI[pensyarah];
+  var TARGET_JAM     = kpiData ? kpiData.targetJam     : DEFAULT_TARGET_JAM;
+  var TARGET_PESERTA = kpiData ? kpiData.targetPeserta : DEFAULT_TARGET_PESERTA;
+
+  var totalKursus = 0;
   var jamP = 0, pesertaP = 0;
   var jamPb = 0, pesertaPb = 0;
   var jamU = 0, pesertaU = 0;
@@ -713,8 +777,6 @@ function applyFilter() {
       perananLabel = perananLabel || "Urus Setia";
     }
 
-    totalJam     += jam;
-    totalPeserta += pes;
     totalKursus++;
 
     filteredData.push({
@@ -724,27 +786,55 @@ function applyFilter() {
     });
   }
 
+  // Guna nilai sebenar dari tab KPIPensyarah jika ada, else kira dari DATA
+  var totalJam, totalPeserta;
+  if (kpiData && peranan === "semua") {
+    totalJam     = kpiData.jam;
+    totalPeserta = kpiData.peserta;
+  } else {
+    totalJam = 0; totalPeserta = 0;
+    for (var j = 0; j < filteredData.length; j++) {
+      totalJam     += filteredData[j].jam;
+      totalPeserta += filteredData[j].peserta;
+    }
+  }
+
   // Kemaskini KPI
   var pctJam     = TARGET_JAM     > 0 ? Math.min(100, Math.round(totalJam     / TARGET_JAM     * 100)) : 0;
   var pctPeserta = TARGET_PESERTA > 0 ? Math.min(100, Math.round(totalPeserta / TARGET_PESERTA * 100)) : 0;
 
   document.getElementById("jamCurrent").textContent  = totalJam;
+  document.getElementById("jamTarget").textContent   = TARGET_JAM;
   document.getElementById("jamBar").style.width      = pctJam + "%";
   document.getElementById("jamPct").textContent      = pctJam + "% tercapai";
   document.getElementById("jamBaki").textContent     = "Baki " + Math.max(0, TARGET_JAM - totalJam) + " jam";
   var jb = document.getElementById("jamBadge");
-  if (pctJam >= 100) { jb.textContent = "&#10003; Tercapai"; jb.className = "badge ok"; }
-  else { jb.textContent = "\u26a0 Belum tercapai"; jb.className = "badge warn"; }
+  var jamBar = document.getElementById("jamBar");
+  if (pctJam >= 100) {
+    jb.innerHTML = "&#10003; Tercapai"; jb.className = "badge ok";
+    jamBar.className = "progress-fill pf-ok";
+  } else {
+    jb.innerHTML = "\u26a0 Belum tercapai"; jb.className = "badge warn";
+    jamBar.className = "progress-fill";
+  }
 
   document.getElementById("pesertaCurrent").textContent = totalPeserta;
+  document.getElementById("pesertaTarget").textContent  = TARGET_PESERTA;
   document.getElementById("pesertaBar").style.width     = pctPeserta + "%";
   document.getElementById("pesertaPct").textContent     = pctPeserta + "% tercapai";
   document.getElementById("pesertaBaki").textContent    = "Baki " + Math.max(0, TARGET_PESERTA - totalPeserta) + " orang";
   var pb = document.getElementById("pesertaBadge");
-  if (pctPeserta >= 100) { pb.textContent = "&#10003; Tercapai"; pb.className = "badge ok"; }
-  else { pb.textContent = "\u26a0 Belum tercapai"; pb.className = "badge warn"; }
+  var pesertaBar = document.getElementById("pesertaBar");
+  if (pctPeserta >= 100) {
+    pb.innerHTML = "&#10003; Tercapai"; pb.className = "badge ok";
+    pesertaBar.className = "progress-fill pf-ok";
+  } else {
+    pb.innerHTML = "\u26a0 Belum tercapai"; pb.className = "badge warn";
+    pesertaBar.className = "progress-fill";
+  }
 
   document.getElementById("kursusCount").textContent = totalKursus;
+  document.getElementById("kursusSubtitle").textContent = "kursus sepanjang tahun " + new Date().getFullYear();
 
   document.getElementById("jamPengajar").textContent    = jamP  + " jam";
   document.getElementById("pesertaPengajar").textContent= pesertaP + " peserta";
@@ -811,7 +901,7 @@ function muatTurunLaporan() {
   var csv = "";
 
   // Tajuk laporan
-  csv += "LAPORAN KPI PSH 2026\r\n";
+  csv += "LAPORAN KPI PSH " + new Date().getFullYear() + "\r\n";
   csv += "Pensyarah:," + nama + "\r\n";
   csv += "Tarikh Laporan:," + tarikhStr + "\r\n";
   csv += "\r\n";
@@ -820,16 +910,24 @@ function muatTurunLaporan() {
   csv += "RINGKASAN PENCAPAIAN\r\n";
   csv += "Perkara,Dicapai,Sasaran,Peratus\r\n";
 
+  var kpiData2      = DATA_KPI[pensyarah];
+  var rptTargetJam  = kpiData2 ? kpiData2.targetJam     : DEFAULT_TARGET_JAM;
+  var rptTargetPes  = kpiData2 ? kpiData2.targetPeserta : DEFAULT_TARGET_PESERTA;
   var totalJam = 0, totalPeserta = 0, totalKursus = filteredData.length;
-  for (var i = 0; i < filteredData.length; i++) {
-    totalJam     += filteredData[i].jam;
-    totalPeserta += filteredData[i].peserta;
+  if (kpiData2) {
+    totalJam     = kpiData2.jam;
+    totalPeserta = kpiData2.peserta;
+  } else {
+    for (var i = 0; i < filteredData.length; i++) {
+      totalJam     += filteredData[i].jam;
+      totalPeserta += filteredData[i].peserta;
+    }
   }
-  var pctJam     = TARGET_JAM     > 0 ? Math.round(totalJam     / TARGET_JAM     * 100) : 0;
-  var pctPeserta = TARGET_PESERTA > 0 ? Math.round(totalPeserta / TARGET_PESERTA * 100) : 0;
+  var pctJam     = rptTargetJam > 0 ? Math.round(totalJam     / rptTargetJam * 100) : 0;
+  var pctPeserta = rptTargetPes > 0 ? Math.round(totalPeserta / rptTargetPes * 100) : 0;
 
-  csv += "Jam Mengajar/Mengurus," + totalJam + "," + TARGET_JAM + "," + pctJam + "%\r\n";
-  csv += "Jumlah Peserta," + totalPeserta + "," + TARGET_PESERTA + "," + pctPeserta + "%\r\n";
+  csv += "Jam Mengajar/Mengurus," + totalJam + "," + rptTargetJam + "," + pctJam + "%\r\n";
+  csv += "Jumlah Peserta," + totalPeserta + "," + rptTargetPes + "," + pctPeserta + "%\r\n";
   csv += "Kursus Disertai," + totalKursus + ",,\r\n";
   csv += "\r\n";
 
