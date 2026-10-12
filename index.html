@@ -410,11 +410,24 @@ var currentPage    = 1;
 var filteredData   = [];
 var DATA           = [];
 
-// ── INDEKS LAJUR SHEET MASTER ──
-// A=0  B=1  C=2  D=3  E=4  F=5  G=6  H=7  I=8
-// J=9  K=10 L=11 M=12 N=13 O=14 P=15 Q=16 R=17
-// S=18 T=19 U=20 V=21 W=22 X=23 Y=24 Z=25
-// AB=27 AD=29 AE=30 AF=31 AG=32 AH=33
+// ── INDEKS LAJUR SHEET MASTER (berdasarkan struktur sebenar) ──
+// A=0  B=1(Bulan)  C=2(Tarikh)  D=3(Masa)  E=4(Nama Kursus)
+// F=5(Tempat)  G=6(Kategori)  H=7(Kluster)  I=8(Peserta)
+// J=9(Pengajar1)  K=10(JamP1)  L=11(PesP1)
+// M=12(Pengajar2) N=13(JamP2)  O=14(PesP2)
+// P=15(Pengajar3) Q=16(JamP3)  R=17(PesP3)
+// S=18(Pembantu1) T=19(JamPb1) U=20(PesPb1)
+// V=21(Pembantu2) W=22(JamPb2) X=23(PesPb2)
+// Y=24(Pembantu3) Z=25(JamPb3) AA=26(PesPb3)
+// AB=27(JumlahKeseluruhanPeserta=L+O+R+U+X+AA+AH)
+// AC=28(Kluster2) AD=29(YuranKursus) AE=30(JumlahYuran=AB*AD)
+// AF=31(Urusetia) AG=32(JamUrus) AH=33(PesUrus)
+
+var SKIP_NAMES = ["UNIT PEMBELAJARAN SEPANJANG HAYAT", "SILA PILIH NAMA", ""];
+
+function isValidName(n) {
+  return n && SKIP_NAMES.indexOf(n) === -1;
+}
 
 function parseCSV(text) {
   var lines = text.split("\n");
@@ -438,14 +451,16 @@ function parseCSV(text) {
     var namaKursus = (cols[4] || "").trim();
     if (!namaKursus) continue;
 
+    // Nama-nama
     var pengajar1 = (cols[9]  || "").trim();
     var pengajar2 = (cols[12] || "").trim();
     var pengajar3 = (cols[15] || "").trim();
     var pembantu1 = (cols[18] || "").trim();
     var pembantu2 = (cols[21] || "").trim();
     var pembantu3 = (cols[24] || "").trim();
-    var urusetia  = (cols[31] || "").trim();
+    var urusetia1 = (cols[31] || "").trim();
 
+    // Jam pengajaran
     var jamP1  = parseFloat(cols[10] || 0) || 0;
     var jamP2  = parseFloat(cols[13] || 0) || 0;
     var jamP3  = parseFloat(cols[16] || 0) || 0;
@@ -454,6 +469,7 @@ function parseCSV(text) {
     var jamPb3 = parseFloat(cols[25] || 0) || 0;
     var jamU   = parseFloat(cols[32] || 0) || 0;
 
+    // Bilangan peserta setiap peranan
     var pesP1  = parseFloat(cols[11] || 0) || 0;
     var pesP2  = parseFloat(cols[14] || 0) || 0;
     var pesP3  = parseFloat(cols[17] || 0) || 0;
@@ -461,36 +477,72 @@ function parseCSV(text) {
     var pesPb2 = parseFloat(cols[23] || 0) || 0;
     var pesPb3 = parseFloat(cols[26] || 0) || 0;
     var pesU   = parseFloat(cols[33] || 0) || 0;
+
+    // JUMLAH KESELURUHAN PESERTA = L+O+R+U+X+AA+AH (formula sebenar dari sheet)
     var totalPeserta = parseFloat(cols[27] || 0) || 0;
+    // Jika AB kosong, kira semula dari komponen
+    if (!totalPeserta) {
+      totalPeserta = pesP1 + pesP2 + pesP3 + pesPb1 + pesPb2 + pesPb3 + pesU;
+    }
+
+    // Yuran kursus (AD=29) dan Jumlah Yuran (AE=30, formula=AB*AD)
+    var yuranKursus  = parseFloat(cols[29] || 0) || 0;
+    var jumlahYuran  = parseFloat(cols[30] || 0) || 0;
+    // Jika AE kosong, kira semula
+    if (!jumlahYuran && yuranKursus && totalPeserta) {
+      jumlahYuran = totalPeserta * yuranKursus;
+    }
+
+    // Maklumat tambahan
+    var tempat    = (cols[5]  || "").trim();
+    var kategori  = (cols[6]  || "").trim();
+    var kluster   = (cols[7]  || "").trim();
+    var masa      = (cols[3]  || "").trim();
 
     // Kumpul senarai pengajar, pembantu, urus
     var listPengajar = [];
-    if (pengajar1 && pengajar1 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar1 !== "SILA PILIH NAMA") listPengajar.push(pengajar1);
-    if (pengajar2 && pengajar2 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar2 !== "SILA PILIH NAMA") listPengajar.push(pengajar2);
-    if (pengajar3 && pengajar3 !== "UNIT PEMBELAJARAN SEPANJANG HAYAT" && pengajar3 !== "SILA PILIH NAMA") listPengajar.push(pengajar3);
+    if (isValidName(pengajar1)) listPengajar.push(pengajar1);
+    if (isValidName(pengajar2)) listPengajar.push(pengajar2);
+    if (isValidName(pengajar3)) listPengajar.push(pengajar3);
 
     var listPembantu = [];
-    if (pembantu1 && pembantu1 !== "SILA PILIH NAMA") listPembantu.push(pembantu1);
-    if (pembantu2 && pembantu2 !== "SILA PILIH NAMA") listPembantu.push(pembantu2);
-    if (pembantu3 && pembantu3 !== "SILA PILIH NAMA") listPembantu.push(pembantu3);
+    if (isValidName(pembantu1)) listPembantu.push(pembantu1);
+    if (isValidName(pembantu2)) listPembantu.push(pembantu2);
+    if (isValidName(pembantu3)) listPembantu.push(pembantu3);
 
     var listUrus = [];
-    if (urusetia && urusetia !== "SILA PILIH NAMA") listUrus.push(urusetia);
+    if (isValidName(urusetia1)) listUrus.push(urusetia1);
 
     result.push({
-      kursus: namaKursus,
-      tarikh: (cols[2] || "").trim(),
-      bulan:  (cols[1] || "").trim(),
+      kursus:   namaKursus,
+      tarikh:   (cols[2] || "").trim(),
+      bulan:    (cols[1] || "").trim(),
+      masa:     masa,
+      tempat:   tempat,
+      kategori: kategori,
+      kluster:  kluster,
       pengajar: listPengajar,
       pembantu: listPembantu,
       urus:     listUrus,
+      // Jam mengikut peranan individu
+      jamP1: jamP1, jamP2: jamP2, jamP3: jamP3,
+      jamPb1: jamPb1, jamPb2: jamPb2, jamPb3: jamPb3,
+      jamU: jamU,
+      // Peserta mengikut peranan individu
+      pesP1: pesP1, pesP2: pesP2, pesP3: pesP3,
+      pesPb1: pesPb1, pesPb2: pesPb2, pesPb3: pesPb3,
+      pesU: pesU,
+      // Jumlah mengikut kategori peranan
       jamPengajar:  jamP1 + jamP2 + jamP3,
       jamPembantu:  jamPb1 + jamPb2 + jamPb3,
       jamUrus:      jamU,
       pesertaPengajar: pesP1 + pesP2 + pesP3,
       pesertaPembantu: pesPb1 + pesPb2 + pesPb3,
       pesertaUrus:     pesU,
-      totalPeserta:    totalPeserta
+      totalPeserta:    totalPeserta,
+      // Yuran
+      yuranKursus:  yuranKursus,
+      jumlahYuran:  jumlahYuran
     });
   }
   return result;
