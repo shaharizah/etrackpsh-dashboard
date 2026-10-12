@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e-Trek PSH KKS2 2.0</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    min-width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    color: #1a2e44;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: #0d2d4a;
+    padding: 0 32px;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    min-height: 60px;
+    width: 100%;
+  }
+  .header-brand { display: flex; align-items: center; gap: 10px; }
+  .header-brand .logo { font-size: 20px; font-weight: 800; color: #ffffff; }
+  .header-brand .logo span { color: #2dd4bf; }
+  .header-brand .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+  .header-brand .subtitle { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .header-nav { display: flex; align-items: stretch; }
+  .nav-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 18px; font-size: 14px; color: rgba(255,255,255,0.55);
+    cursor: pointer; border-bottom: 3px solid transparent; font-weight: 500;
+  }
+  .nav-tab.active { color: #2dd4bf; border-bottom-color: #2dd4bf; }
+
+  /* ── CONTENT ── */
+  .content { padding: 24px 32px; width: 100%; }
+
+  /* ── WELCOME ROW ── */
+  .top-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .welcome h2 { font-size: 22px; font-weight: 700; color: #0d2d4a; }
+  .welcome p  { font-size: 13px; color: #64748b; margin-top: 4px; }
+  .filters { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .filter-group { display: flex; flex-direction: column; gap: 3px; }
+  .filter-label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+  select {
+    border: 1px solid #e2e8f0; border-radius: 7px;
+    padding: 8px 28px 8px 12px; font-size: 14px; color: #1a2e44;
+    background: #ffffff; cursor: pointer; min-width: 150px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title { font-size: 17px; font-weight: 700; color: #0d2d4a; margin-bottom: 14px; }
+
+  /* ── KPI CARDS — table layout untuk serasi Google Sites ── */
+  .three-col { display: table; width: 100%; border-spacing: 12px; margin: -12px -12px 12px; }
+  .three-col-row { display: table-row; }
+  .three-col-cell { display: table-cell; width: 33.33%; vertical-align: top; }
+
+  .kpi-card {
+    background: #ffffff; border-radius: 14px; padding: 22px 24px; border: 1px solid #e8edf2;
+  }
+  .kpi-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .kpi-icon {
+    width: 54px; height: 54px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;
+  }
+  .ic-teal   { background: #d0faf4; }
+  .ic-blue   { background: #dbeafe; }
+  .ic-green  { background: #dcfce7; }
+  .kpi-name  { font-size: 13px; color: #64748b; font-weight: 500; }
+  .kpi-val   { font-size: 28px; font-weight: 800; color: #0d2d4a; line-height: 1.2; }
+  .kpi-val .denom { font-size: 16px; font-weight: 600; color: #94a3b8; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; margin-bottom: 10px;
+  }
+  .badge.warn { background: #fef3c7; color: #b45309; }
+  .badge.ok   { background: #dcfce7; color: #15803d; }
+  .progress-track { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+  .progress-fill  { height: 100%; border-radius: 99px; background: #14b8a6; }
+  .progress-foot  { display: flex; justify-content: space-between; font-size: 11px; }
+  .pf-pct  { color: #0d9488; font-weight: 700; }
+  .pf-baki { color: #94a3b8; }
+  .kpi-count     { font-size: 44px; font-weight: 800; color: #0d2d4a; margin-top: 4px; }
+  .kpi-count-sub { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+
+  /* ── PERANAN CARDS ── */
+  .peranan-card {
+    background: #ffffff; border-radius: 14px; padding: 20px 22px;
+    border: 1px solid #e8edf2; display: flex; align-items: center; gap: 16px;
+  }
+  .p-icon {
+    width: 58px; height: 58px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+  }
+  .p-icon.teal   { background: #d0faf4; }
+  .p-icon.blue   { background: #dbeafe; }
+  .p-icon.purple { background: #ede9fe; }
+  .p-info h3     { font-size: 15px; font-weight: 700; color: #0d2d4a; margin-bottom: 8px; }
+  .p-stats       { display: flex; gap: 14px; }
+  .p-stat        { font-size: 14px; color: #475569; }
+  .p-stat strong { color: #0d2d4a; }
+
+  /* ── TABLE ── */
+  .table-card {
+    background: #ffffff; border-radius: 14px; padding: 22px 24px;
+    border: 1px solid #e8edf2; margin-bottom: 16px;
+  }
+  .table-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+  }
+  .table-head h2 { font-size: 17px; font-weight: 700; color: #0d2d4a; }
+  .table-actions { display: flex; gap: 8px; align-items: center; }
+  .search-wrap {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid #e2e8f0; border-radius: 7px; padding: 6px 12px; background: #f8fafc;
+  }
+  .search-wrap input {
+    border: none; background: transparent; outline: none;
+    font-size: 14px; color: #475569; width: 180px;
+  }
+  .btn-dl {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #0d9488; color: #ffffff; border: none;
+    padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 11px 14px;
+    font-size: 12px; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  }
+  tbody tr { border-bottom: 1px solid #f1f5f9; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 13px 14px; font-size: 14px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill.p1 { background: #dbeafe; color: #1d4ed8; }
+  .pill.p2 { background: #e0f2fe; color: #0369a1; }
+  .pill.p3 { background: #ede9fe; color: #6d28d9; }
+  .table-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;
+  }
+  .t-count { font-size: 12px; color: #94a3b8; }
+  .pager   { display: flex; gap: 4px; }
+  .pg {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e2e8f0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer; background: #fff; color: #475569;
+    font-weight: 500; text-decoration: none;
+  }
+  .pg.on { background: #0d9488; color: #fff; border-color: #0d9488; }
+  .table-note { font-size: 11px; color: #94a3b8; margin-top: 8px; }
+
+  /* ── HIDDEN ROWS ── */
+  .data-row { display: none; }
+  .data-row.visible { display: table-row; }
+
+  /* ── PAGINATION INFO ── */
+  #pageInfo { font-size: 12px; color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-brand">
+    <div class="logo">e-<span>Trek</span> PSH</div>
+    <div class="sep"></div>
+    <div class="subtitle">KKS2 2.0</div>
+  </div>
+  <div class="header-nav">
+    <div class="nav-tab active">&#127968; Dashboard</div>
+    <div class="nav-tab">&#128196; Rekod Kursus</div>
+    <div class="nav-tab">&#128202; Laporan KPI</div>
+    <div class="nav-tab">&#128218; Panduan</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- Welcome + Filters -->
+  <div class="top-row">
+    <div class="welcome">
+      <h2>Selamat datang, <span id="greetName">Puan Hidayah</span></h2>
+      <p>Berikut adalah ringkasan pencapaian dan penglibatan PSH anda.</p>
+    </div>
+    <div class="filters">
+      <div class="filter-group">
+        <div class="filter-label">Pensyarah</div>
+        <select id="filterPensyarah" onchange="applyFilter()">
+          <option value="SITI NURR HIDAYAH BINTI MOHD SANIF">Pn. Siti Nurr Hidayah</option>
+          <option value="NORASHIKIN BINTI AMIR">Pn. Norashikin</option>
+          <option value="NORHAZLINA BINTI SAHARI">Pn. Norhazlina</option>
+          <option value="RASIDAH BINTI MOHD ZOHOR">Pn. Rasidah</option>
+          <option value="NUR ANIS IZZATI BINTI MAT NOOR">Pn. Nur Anis Izzati</option>
+          <option value="NURZAIMA BINTI MAHMOD">Pn. Nurzaima</option>
+          <option value="SHAHARIZAH BINTI JAMALUDIN">Pn. Shaharizah</option>
+          <option value="SALINA BINTI IDRUS">Pn. Salina</option>
+          <option value="SITI FATIMAH BINTI PATKAR">Pn. Siti Fatimah</option>
+          <option value="SITI NORSIAH BINTI AHMAD">Pn. Siti Norsiah</option>
+          <option value="SITI MASTURA AINAA BINTI MOKHTAR">Pn. Siti Mastura Ainaa</option>
+          <option value="SITI FARIDATUL AISYHAH BINTI MOHD SAHAK">Pn. Siti Faridatul</option>
+          <option value="DATIN SAKINAH BINTI MUPIT">Datin Sakinah</option>
+          <option value="HADIZAH BINTI MOHD KASSIM">Pn. Hadizah</option>
+          <option value="NORHAFIZAI BINTI MD NOR">Pn. Norhafizai</option>
+          <option value="NOOR KHAIRUNNISA BINTI OTHMAN">Pn. Noor Khairunnisa</option>
+          <option value="CHU MEI YEA">Pn. Chu Mei Yea</option>
+          <option value="AFIDA BINTI KAMARUDIN">Pn. Afida</option>
+          <option value="Ts. HASIMAHWATI BINTI ABU YAMIN">Ts. Hasimahwati</option>
+          <option value="Ts. HAIRU NAZLINA BINTI ISMAIL">Ts. Hairu Nazlina</option>
+          <option value="Ts. ZARULRIZAM BIN AB JALIL">Ts. Zarulrizam</option>
+          <option value="Ts. IZWANIZAM BIN YAHAYA">Ts. Izwanizam</option>
+          <option value="Ts. MOHAMAD IQMAL HANAFI BIN AHMAD HISHAM">Ts. Mohamad Iqmal</option>
+          <option value="Ts. RASYIDI BIN ABDULLAH">Ts. Rasyidi</option>
+          <option value="MOHD TAUFIQ BIN ABDULLAH ZAWAWI">En. Mohd Taufiq</option>
+          <option value="MOHD ZAKI BIN MOHD ISMAIL">En. Mohd Zaki</option>
+          <option value="AHMAD SHAWAL BIN ALI">En. Ahmad Shawal</option>
+          <option value="AZMI BIN HARUN">En. Azmi</option>
+          <option value="AZANI BIN TIMAN">En. Azani</option>
+          <option value="HALIM BIN PAIMUN">En. Halim</option>
+          <option value="MUHAMMAD QUASEM BIN SARKOWI">En. Muhammad Quasem</option>
+          <option value="MUHAMMAD HAFIZ BIN ISMAIL">En. Muhammad Hafiz</option>
+          <option value="MUHAMMAD AZAM BIN JAMALUDIN">En. Muhammad Azam</option>
+          <option value="MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI">En. Muhamad Asyraf</option>
+          <option value="MOHAMAD NORZAMANI BIN MAT DAUD">En. Mohamad Norzamani</option>
+          <option value="SUHAILIE BINTI DAUD">Pn. Suhailie</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Tahun</div>
+        <select style="min-width:80px;">
+          <option>2026</option>
+          <option>2025</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Peranan</div>
+        <select id="filterPeranan" onchange="applyFilter()">
+          <option value="semua">Semua peranan</option>
+          <option value="pengajar">Tenaga Pengajar</option>
+          <option value="pembantu">Pembantu Pengajar</option>
+          <option value="urus">Urus Setia</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="section-title">Ringkasan Pencapaian PSH</div>
+  <div class="three-col">
+    <div class="three-col-row">
+
+      <div class="three-col-cell">
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <div class="kpi-icon ic-teal">&#127891;</div>
+            <div>
+              <div class="kpi-name">Jam Mengajar / Mengurus</div>
+              <div class="kpi-val"><span id="jamCurrent">0</span> <span class="denom">/ <span id="jamTarget">56</span> jam</span></div>
+            </div>
+          </div>
+          <span class="badge warn" id="jamBadge">&#9888; Belum tercapai</span>
+          <div class="progress-track"><div class="progress-fill" id="jamBar" style="width:0%"></div></div>
+          <div class="progress-foot">
+            <span class="pf-pct" id="jamPct">0% tercapai</span>
+            <span class="pf-baki" id="jamBaki">Baki 56 jam</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="three-col-cell">
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <div class="kpi-icon ic-blue">&#128101;</div>
+            <div>
+              <div class="kpi-name">Peserta</div>
+              <div class="kpi-val"><span id="pesertaCurrent">0</span> <span class="denom">/ <span id="pesertaTarget">89</span> orang</span></div>
+            </div>
+          </div>
+          <span class="badge warn" id="pesertaBadge">&#9888; Belum tercapai</span>
+          <div class="progress-track"><div class="progress-fill" id="pesertaBar" style="width:0%"></div></div>
+          <div class="progress-foot">
+            <span class="pf-pct" id="pesertaPct">0% tercapai</span>
+            <span class="pf-baki" id="pesertaBaki">Baki 89 orang</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="three-col-cell">
+        <div class="kpi-card">
+          <div class="kpi-head">
+            <div class="kpi-icon ic-green">&#128203;</div>
+            <div><div class="kpi-name">Kursus Disertai</div></div>
+          </div>
+          <div class="kpi-count" id="kursusCount">0</div>
+          <div class="kpi-count-sub">kursus sepanjang tahun 2026</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Peranan -->
+  <div class="section-title">Penglibatan Mengikut Peranan</div>
+  <div class="three-col">
+    <div class="three-col-row">
+
+      <div class="three-col-cell">
+        <div class="peranan-card">
+          <div class="p-icon teal">&#129489;&#8205;&#127979;</div>
+          <div class="p-info">
+            <h3>Tenaga Pengajar</h3>
+            <div class="p-stats">
+              <div class="p-stat">&#128336; <strong id="jamPengajar">0 jam</strong></div>
+              <div class="p-stat">&#128100; <strong id="pesertaPengajar">0 peserta</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="three-col-cell">
+        <div class="peranan-card">
+          <div class="p-icon blue">&#128106;</div>
+          <div class="p-info">
+            <h3>Pembantu Pengajar</h3>
+            <div class="p-stats">
+              <div class="p-stat">&#128336; <strong id="jamPembantu">0 jam</strong></div>
+              <div class="p-stat">&#128100; <strong id="pesertaPembantu">0 peserta</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="three-col-cell">
+        <div class="peranan-card">
+          <div class="p-icon purple">&#9881;</div>
+          <div class="p-info">
+            <h3>Urus Setia</h3>
+            <div class="p-stats">
+              <div class="p-stat">&#128336; <strong id="jamUrus">0 jam</strong></div>
+              <div class="p-stat">&#128100; <strong id="pesertaUrus">0 peserta</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-head">
+      <h2>Rekod Kursus</h2>
+      <div class="table-actions">
+        <div class="search-wrap">
+          <span style="color:#94a3b8;">&#128269;</span>
+          <input type="text" id="searchBox" placeholder="Cari kursus..." oninput="applyFilter()">
+        </div>
+        <a class="btn-dl" id="btnCetak" href="#">&#11015; Muat Turun Laporan</a>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Kursus</th>
+          <th>Tarikh</th>
+          <th>Peranan</th>
+          <th>Jam</th>
+          <th>Peserta</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- Dijana oleh JavaScript -->
+      </tbody>
+    </table>
+
+    <div class="table-foot">
+      <div class="t-count" id="pageInfo">Tiada rekod</div>
+      <div class="pager" id="pager"></div>
+    </div>
+    <div class="table-note">&#8505; Peserta dikira mengikut agihan individu bagi setiap kursus.</div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA SEBENAR DARI eTrackPSH 2026.xlsx
+// ══════════════════════════════════════════════
+var DATA = [
+  {kursus:"KURSUS ASAS PEMBUATAN ROTI",tarikh:"17.01.2026",bulan:"JANUARI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NUR ANIS IZZATI BINTI MAT NOOR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:0,jamPembantu:5,jamUrus:5,pesertaPengajar:0,pesertaPembantu:12,pesertaUrus:11,totalPeserta:23},
+  {kursus:"KURSUS GREEN TECHNOLOGY - SIRI 1: REKABENTUK TEKNOLOGI SOLAR",tarikh:"20.01.2026",bulan:"JANUARI",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:15,pesertaPembantu:8,pesertaUrus:2,totalPeserta:25},
+  {kursus:"KURSUS GREEN TECHNOLOGY - SIRI 2: PEMASANGAN SISTEM SOLAR",tarikh:"21.01.2026",bulan:"JANUARI",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:15,pesertaPembantu:8,pesertaUrus:2,totalPeserta:25},
+  {kursus:"KURSUS TEKNIK MENGECAT",tarikh:"24.01.2026",bulan:"JANUARI",pengajar:["AZMI BIN HARUN"],pembantu:[],urus:["NORHAFIZAI BINTI MD NOR"],jamPengajar:8,jamPembantu:0,jamUrus:8,pesertaPengajar:9,pesertaPembantu:0,pesertaUrus:8,totalPeserta:17},
+  {kursus:"KURSUS ASAS PENGUCAPAN AWAM",tarikh:"25.01.2026",bulan:"JANUARI",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["RASIDAH BINTI MOHD ZOHOR"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:37,pesertaPembantu:18,pesertaUrus:6,totalPeserta:61},
+  {kursus:"KURSUS BAKED LASAGNA & MACARONI",tarikh:"14.02.2026",bulan:"FEBRUARI",pengajar:["NORHAFIZAI BINTI MD NOR"],pembantu:["SALINA BINTI IDRUS"],urus:["MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:5,pesertaPembantu:2,pesertaUrus:1,totalPeserta:8},
+  {kursus:"KURSUS FOTOGRAFI & VIDEOGRAFI 360",tarikh:"07.02.2026",bulan:"FEBRUARI",pengajar:["MOHD TAUFIQ BIN ABDULLAH ZAWAWI"],pembantu:["SUHAILIE BINTI DAUD"],urus:["MUHAMMAD HAFIZ BIN ISMAIL"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:10,pesertaPembantu:5,pesertaUrus:1,totalPeserta:16},
+  {kursus:"KURSUS SMART SOLAT",tarikh:"07.02.2026",bulan:"FEBRUARI",pengajar:["AHMAD SHAWAL BIN ALI"],pembantu:["DATIN SAKINAH BINTI MUPIT"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:15,pesertaPembantu:8,pesertaUrus:2,totalPeserta:25},
+  {kursus:"KURSUS PENGHASILAN COMICS AI",tarikh:"08.02.2026",bulan:"FEBRUARI",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:["SUHAILIE BINTI DAUD"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:8,jamPembantu:8,jamUrus:8,pesertaPengajar:7,pesertaPembantu:4,pesertaUrus:1,totalPeserta:12},
+  {kursus:"KURSUS RAHSIA JIMAT CUKAI PENDAPATAN & E-FILING 2026",tarikh:"11.02.2026",bulan:"FEBRUARI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["DATIN SAKINAH BINTI MUPIT","AHMAD SHAWAL BIN ALI"],urus:["MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI"],jamPengajar:0,jamPembantu:5,jamUrus:0,pesertaPengajar:0,pesertaPembantu:13,pesertaUrus:12,totalPeserta:38},
+  {kursus:"KURSUS PENYEDIAAN RESUME SIRI 1",tarikh:"11.02.2026",bulan:"FEBRUARI",pengajar:["RASIDAH BINTI MOHD ZOHOR"],pembantu:["SITI FATIMAH BINTI PATKAR"],urus:["NUR ANIS IZZATI BINTI MAT NOOR"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
+  {kursus:"KURSUS REKABENTUK STUDIO RAYA",tarikh:"28.02.2026",bulan:"FEBRUARI",pengajar:["NORHAFIZAI BINTI MD NOR"],pembantu:["AZANI BIN TIMAN"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:8,jamPembantu:5,jamUrus:8,pesertaPengajar:16,pesertaPembantu:8,pesertaUrus:3,totalPeserta:27},
+  {kursus:"KURSUS POLA ASAS PAKAIAN",tarikh:"28.02.2026",bulan:"FEBRUARI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["MUHAMMAD HAFIZ BIN ISMAIL"],urus:["NUR ANIS IZZATI BINTI MAT NOOR"],jamPengajar:0,jamPembantu:5,jamUrus:5,pesertaPengajar:0,pesertaPembantu:9,pesertaUrus:9,totalPeserta:18},
+  {kursus:"KURSUS KAD DAN POSTER RAYA DIGITAL",tarikh:"28.02.2026",bulan:"FEBRUARI",pengajar:["SUHAILIE BINTI DAUD"],pembantu:["SITI NORSIAH BINTI AHMAD"],urus:["MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI"],jamPengajar:8,jamPembantu:8,jamUrus:8,pesertaPengajar:10,pesertaPembantu:5,pesertaUrus:1,totalPeserta:16},
+  {kursus:"KURSUS KESELAMATAN DAN KESIHATAN PEKERJAAN (SICW)",tarikh:"10.03.2026",bulan:"MAC",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["Ts. ZARULRIZAM BIN AB JALIL"],urus:["MUHAMMAD QUASEM BIN SARKOWI"],jamPengajar:0,jamPembantu:8,jamUrus:8,pesertaPengajar:0,pesertaPembantu:12,pesertaUrus:12,totalPeserta:24},
+  {kursus:"KURSUS GOOGLE SITES UNTUK BISNES & KOMUNITI",tarikh:"14.03.2026",bulan:"MAC",pengajar:["NOOR KHAIRUNNISA BINTI OTHMAN"],pembantu:["SITI FARIDATUL AISYHAH BINTI MOHD SAHAK"],urus:["HADIZAH BINTI MOHD KASSIM"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:12,pesertaPembantu:6,pesertaUrus:2,totalPeserta:20},
+  {kursus:"KURSUS KEPIMPINAN MURID",tarikh:"01.04.2026",bulan:"APRIL",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["DATIN SAKINAH BINTI MUPIT"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:0,jamPembantu:5,jamUrus:0,pesertaPengajar:0,pesertaPembantu:22,pesertaUrus:22,totalPeserta:44},
+  {kursus:"KURSUS TEKNOLOGI SOLAR PV (SIRI 1)",tarikh:"13.04.2026",bulan:"APRIL",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["SITI MASTURA AINAA BINTI MOKHTAR"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:9,pesertaPembantu:5,pesertaUrus:2,totalPeserta:16},
+  {kursus:"KURSUS TEKNOLOGI SOLAR PV (SIRI 2)",tarikh:"14.04.2026",bulan:"APRIL",pengajar:["Ts. ZARULRIZAM BIN AB JALIL"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["SITI MASTURA AINAA BINTI MOKHTAR"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:9,pesertaPembantu:5,pesertaUrus:2,totalPeserta:16},
+  {kursus:"KURSUS ASAS PENGUCAPAN AWAM",tarikh:"22.04.2026",bulan:"APRIL",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["NURZAIMA BINTI MAHMOD","SITI NORSIAH BINTI AHMAD"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:21,pesertaPembantu:7,pesertaUrus:7,totalPeserta:50},
+  {kursus:"KURSUS PEMBUATAN SET CHICKEN CHOP",tarikh:"22.04.2026",bulan:"APRIL",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["MUHAMMAD HAFIZ BIN ISMAIL"],jamPengajar:0,jamPembantu:5,jamUrus:0,pesertaPengajar:0,pesertaPembantu:7,pesertaUrus:7,totalPeserta:14},
+  {kursus:"KURSUS AI IMAGE CREATOR",tarikh:"19.04.2026",bulan:"APRIL",pengajar:["MOHD TAUFIQ BIN ABDULLAH ZAWAWI"],pembantu:[],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:0,jamUrus:5,pesertaPengajar:6,pesertaPembantu:0,pesertaUrus:2,totalPeserta:8},
+  {kursus:"KURSUS ANEKA KEK SLICE",tarikh:"26.04.2026",bulan:"APRIL",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NURZAIMA BINTI MAHMOD","NUR ANIS IZZATI BINTI MAT NOOR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:0,jamPembantu:5,jamUrus:5,pesertaPengajar:0,pesertaPembantu:4,pesertaUrus:4,totalPeserta:13},
+  {kursus:"KURSUS ASAS KOMUNIKASI UNTUK INDUSTRI",tarikh:"28.04.2026",bulan:"APRIL",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["RASIDAH BINTI MOHD ZOHOR"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
+  {kursus:"KURSUS PENGHASILAN KOMIK & VIDEO ANIMASI AI (SIRI 2)",tarikh:"25.04.2026",bulan:"APRIL",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:["SUHAILIE BINTI DAUD"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:8,jamPembantu:8,jamUrus:8,pesertaPengajar:6,pesertaPembantu:3,pesertaUrus:1,totalPeserta:10},
+  {kursus:"KURSUS KUASAI PENGGUNAAN KALKULATOR SAINTIFIK",tarikh:"26.04.2026",bulan:"APRIL",pengajar:["AFIDA BINTI KAMARUDIN"],pembantu:[],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:0,jamPembantu:0,jamUrus:5,pesertaPengajar:0,pesertaPembantu:0,pesertaUrus:12,totalPeserta:12},
+  {kursus:"KURSUS DIY FELT KEYCHAIN",tarikh:"25.04.2026",bulan:"APRIL",pengajar:["HADIZAH BINTI MOHD KASSIM"],pembantu:[],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:0,jamUrus:5,pesertaPengajar:12,pesertaPembantu:0,pesertaUrus:3,totalPeserta:15},
+  {kursus:"KURSUS LASER ENGRAVING",tarikh:"29.04.2026",bulan:"APRIL",pengajar:["SITI MASTURA AINAA BINTI MOKHTAR"],pembantu:["AHMAD SHAWAL BIN ALI"],urus:["HADIZAH BINTI MOHD KASSIM"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:10,pesertaPembantu:5,pesertaUrus:2,totalPeserta:17},
+  {kursus:"E-CERTIFICATE DESIGN AND MANAGEMENT COURSE",tarikh:"29.04.2026",bulan:"APRIL",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["NURZAIMA BINTI MAHMOD"],urus:["MUHAMMAD HAFIZ BIN ISMAIL"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:18,pesertaPembantu:9,pesertaUrus:3,totalPeserta:30},
+  {kursus:"KURSUS PERSEDIAAN LI BERTERASKAN KESELAMATAN ELEKTRIK (SIRI 1)",tarikh:"04.05.2026",bulan:"MEI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["NURZAIMA BINTI MAHMOD","RASIDAH BINTI MOHD ZOHOR"],urus:["SITI MASTURA AINAA BINTI MOKHTAR"],jamPengajar:0,jamPembantu:5,jamUrus:0,pesertaPengajar:0,pesertaPembantu:22,pesertaUrus:21,totalPeserta:65},
+  {kursus:"KURSUS PERSEDIAAN LI BERTERASKAN KESELAMATAN ELEKTRIK (SIRI 2)",tarikh:"05.05.2026",bulan:"MEI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI","NURZAIMA BINTI MAHMOD"],urus:["SITI MASTURA AINAA BINTI MOKHTAR"],jamPengajar:0,jamPembantu:5,jamUrus:0,pesertaPengajar:0,pesertaPembantu:22,pesertaUrus:21,totalPeserta:65},
+  {kursus:"KURSUS PEMBANGUNAN DIRI DAN KERJAYA BIDANG ELEKTRIK (SIRI 1)",tarikh:"13.05.2026",bulan:"MEI",pengajar:["RASIDAH BINTI MOHD ZOHOR"],pembantu:["NURZAIMA BINTI MAHMOD"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:39,pesertaPembantu:20,pesertaUrus:6,totalPeserta:65},
+  {kursus:"KURSUS PEMBANGUNAN DIRI DAN KERJAYA BIDANG ELEKTRIK (SIRI 2)",tarikh:"14.05.2026",bulan:"MEI",pengajar:["MUHAMAD ASYRAF NURUDIN BIN ZULKIFLI"],pembantu:["NURZAIMA BINTI MAHMOD"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:39,pesertaPembantu:20,pesertaUrus:6,totalPeserta:65},
+  {kursus:"KURSUS KEMAHIRAN PROFESIONAL PELAJAR WBL",tarikh:"13.05.2026",bulan:"MEI",pengajar:["NORHAZLINA BINTI SAHARI"],pembantu:["SITI FARIDATUL AISYHAH BINTI MOHD SAHAK"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
+  {kursus:"CREATE YOUR OWN EBOOK USING AI (ONLINE)",tarikh:"16.05.2026",bulan:"MEI",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:["MUHAMMAD AZAM BIN JAMALUDIN"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:8,jamPembantu:8,jamUrus:8,pesertaPengajar:5,pesertaPembantu:3,pesertaUrus:1,totalPeserta:9},
+  {kursus:"KURSUS PENGHASILAN NUGGET & SOSEJ",tarikh:"16.05.2026",bulan:"MEI",pengajar:["RASIDAH BINTI MOHD ZOHOR"],pembantu:["SITI FATIMAH BINTI PATKAR"],urus:["SITI MASTURA AINAA BINTI MOKHTAR"],jamPengajar:5,jamPembantu:5,jamUrus:5,pesertaPengajar:6,pesertaPembantu:3,pesertaUrus:1,totalPeserta:10},
+  {kursus:"KURSUS JAHITAN TELEKUNG",tarikh:"16.05.2026",bulan:"MEI",pengajar:["UNIT PEMBELAJARAN SEPANJANG HAYAT"],pembantu:["SHAHARIZAH BINTI JAMALUDIN"],urus:["HADIZAH BINTI MOHD KASSIM"],jamPengajar:0,jamPembantu:6,jamUrus:6,pesertaPengajar:0,pesertaPembantu:4,pesertaUrus:4,totalPeserta:8},
+  {kursus:"SENI LUKISAN DOODLE KREATIF",tarikh:"03.06.2026",bulan:"JUN",pengajar:["Ts. HAIRU NAZLINA BINTI ISMAIL"],pembantu:["CHU MEI YEA"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:17,pesertaPembantu:8,pesertaUrus:3,totalPeserta:28},
+  {kursus:"JAHIT BANTAL COMEL DIY",tarikh:"03.06.2026",bulan:"JUN",pengajar:["HADIZAH BINTI MOHD KASSIM"],pembantu:["SHAHARIZAH BINTI JAMALUDIN"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:7,pesertaPembantu:4,pesertaUrus:1,totalPeserta:12},
+  {kursus:"CLEAN MY ROOM",tarikh:"03.06.2026",bulan:"JUN",pengajar:["SALINA BINTI IDRUS"],pembantu:[],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:0,jamUrus:0,pesertaPengajar:6,pesertaPembantu:0,pesertaUrus:2,totalPeserta:8},
+  {kursus:"JUNIOR CHEF: BISKUT CHOCOLATE CHIP",tarikh:"03.06.2026",bulan:"JUN",pengajar:["SITI MASTURA AINAA BINTI MOKHTAR"],pembantu:["SITI FATIMAH BINTI PATKAR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:10,pesertaPembantu:5,pesertaUrus:2,totalPeserta:17},
+  {kursus:"ASAS ROBOTIK UNTUK PELAJAR",tarikh:"04.06.2026",bulan:"JUN",pengajar:["NOOR KHAIRUNNISA BINTI OTHMAN"],pembantu:["MUHAMMAD AZAM BIN JAMALUDIN"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:17,pesertaPembantu:8,pesertaUrus:3,totalPeserta:28},
+  {kursus:"JUNIOR CHEF: KEK BATIK INDULGENCE",tarikh:"04.06.2026",bulan:"JUN",pengajar:["SALINA BINTI IDRUS"],pembantu:["NORASHIKIN BINTI AMIR"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:17,pesertaPembantu:8,pesertaUrus:3,totalPeserta:28},
+  {kursus:"TEKNIK MEWARNA KREATIF",tarikh:"04.06.2026",bulan:"JUN",pengajar:["Ts. HAIRU NAZLINA BINTI ISMAIL"],pembantu:["CHU MEI YEA"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
+  {kursus:"SMART SOLAT SIRI 2",tarikh:"04.06.2026",bulan:"JUN",pengajar:["AHMAD SHAWAL BIN ALI"],pembantu:["DATIN SAKINAH BINTI MUPIT"],urus:["SITI NURR HIDAYAH BINTI MOHD SANIF"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:4,pesertaPembantu:2,pesertaUrus:1,totalPeserta:7},
+  {kursus:"PENGHASILAN STONE ART (ROCK PAINTING)",tarikh:"05.06.2026",bulan:"JUN",pengajar:["HADIZAH BINTI MOHD KASSIM"],pembantu:["SALINA BINTI IDRUS"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:13,pesertaPembantu:7,pesertaUrus:2,totalPeserta:22},
+  {kursus:"ANAK BIJAK KOMPUTER: MICROSOFT WORD",tarikh:"05.06.2026",bulan:"JUN",pengajar:["NOOR KHAIRUNNISA BINTI OTHMAN"],pembantu:["MUHAMMAD AZAM BIN JAMALUDIN"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:11,pesertaPembantu:5,pesertaUrus:2,totalPeserta:18},
+  {kursus:"JUNIOR CHEF: CHEESE TART",tarikh:"05.06.2026",bulan:"JUN",pengajar:["NURZAIMA BINTI MAHMOD"],pembantu:["NORHAZLINA BINTI SAHARI"],urus:["SHAHARIZAH BINTI JAMALUDIN"],jamPengajar:5,jamPembantu:5,jamUrus:0,pesertaPengajar:22,pesertaPembantu:11,pesertaUrus:3,totalPeserta:36},
+  {kursus:"KURSUS RESKILLING & UPSKILLING AUTOCAD",tarikh:"23.06.2026",bulan:"JUN",pengajar:["NORASHIKIN BINTI AMIR"],pembantu:["SITI FARIDATUL AISYHAH BINTI MOHD SAHAK"],urus:["MUHAMMAD HAFIZ BIN ISMAIL"],jamPengajar:8,jamPembantu:8,jamUrus:0,pesertaPengajar:6,pesertaPembantu:4,pesertaUrus:1,totalPeserta:11},
+  {kursus:"KURSUS PENYEDIAAN RESUME SIRI II",tarikh:"01.08.2026",bulan:"OGOS",pengajar:["RASIDAH BINTI MOHD ZOHOR"],pembantu:[],urus:["SITI FATIMAH BINTI PATKAR"],jamPengajar:4,jamPembantu:0,jamUrus:4,pesertaPengajar:87,pesertaPembantu:0,pesertaUrus:22,totalPeserta:109},
+  {kursus:"KURSUS PENULISAN KERTAS KERJA DAN LAPORAN PROGRAM",tarikh:"01.08.2026",bulan:"OGOS",pengajar:["DATIN SAKINAH BINTI MUPIT"],pembantu:[],urus:["AHMAD SHAWAL BIN ALI"],jamPengajar:5,jamPembantu:0,jamUrus:5,pesertaPengajar:15,pesertaPembantu:0,pesertaUrus:4,totalPeserta:19},
+  {kursus:"NOTEBOOKLM PRAKTIKAL INTENSIF",tarikh:"01.08.2026",bulan:"OGOS",pengajar:["SITI NORSIAH BINTI AHMAD"],pembantu:[],urus:["SUHAILIE BINTI DAUD"],jamPengajar:1,jamPembantu:0,jamUrus:1,pesertaPengajar:138,pesertaPembantu:0,pesertaUrus:34,totalPeserta:172},
+  {kursus:"KURSUS ASAS AUGMENTED REALITY (AR)",tarikh:"02.08.2026",bulan:"OGOS",pengajar:["SUHAILIE BINTI DAUD"],pembantu:[],urus:["NURZAIMA BINTI MAHMOD"],jamPengajar:1,jamPembantu:0,jamUrus:1,pesertaPengajar:114,pesertaPembantu:0,pesertaUrus:29,totalPeserta:143}
+];
+
+var TARGET_JAM = 56;
+var TARGET_PESERTA = 89;
+var ROWS_PER_PAGE = 5;
+var currentPage = 1;
+var filteredData = [];
+
+function getDisplayName(fullName) {
+  var sel = document.getElementById("filterPensyarah");
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === fullName) return sel.options[i].text;
+  }
+  return fullName;
+}
+
+function applyFilter() {
+  var pensyarah = document.getElementById("filterPensyarah").value;
+  var peranan   = document.getElementById("filterPeranan").value;
+  var cari      = document.getElementById("searchBox").value.toLowerCase();
+
+  // Kemaskini nama greeting
+  document.getElementById("greetName").textContent = getDisplayName(pensyarah);
+
+  var totalJam = 0, totalPeserta = 0, totalKursus = 0;
+  var jamP = 0, pesertaP = 0;
+  var jamPb = 0, pesertaPb = 0;
+  var jamU = 0, pesertaU = 0;
+
+  filteredData = [];
+
+  for (var i = 0; i < DATA.length; i++) {
+    var d = DATA[i];
+    var isPengajar = d.pengajar.indexOf(pensyarah) >= 0;
+    var isPembantu = d.pembantu.indexOf(pensyarah) >= 0;
+    var isUrus     = d.urus.indexOf(pensyarah) >= 0;
+    var terlibat   = isPengajar || isPembantu || isUrus;
+    if (!terlibat) continue;
+
+    // Filter peranan
+    if (peranan === "pengajar" && !isPengajar) continue;
+    if (peranan === "pembantu" && !isPembantu) continue;
+    if (peranan === "urus"     && !isUrus)     continue;
+
+    // Filter carian
+    if (cari && d.kursus.toLowerCase().indexOf(cari) < 0) continue;
+
+    // Kira jam & peserta untuk peranan berkaitan
+    var jam = 0, pes = 0, perananLabel = "";
+    if (isPengajar && (peranan === "semua" || peranan === "pengajar")) {
+      jam += d.jamPengajar; pes += d.pesertaPengajar;
+      jamP += d.jamPengajar; pesertaP += d.pesertaPengajar;
+      perananLabel = "Tenaga Pengajar";
+    }
+    if (isPembantu && (peranan === "semua" || peranan === "pembantu")) {
+      jam += d.jamPembantu; pes += d.pesertaPembantu;
+      jamPb += d.jamPembantu; pesertaPb += d.pesertaPembantu;
+      perananLabel = perananLabel || "Pembantu Pengajar";
+    }
+    if (isUrus && (peranan === "semua" || peranan === "urus")) {
+      jam += d.jamUrus; pes += d.pesertaUrus;
+      jamU += d.jamUrus; pesertaU += d.pesertaUrus;
+      perananLabel = perananLabel || "Urus Setia";
+    }
+
+    totalJam     += jam;
+    totalPeserta += pes;
+    totalKursus++;
+
+    filteredData.push({
+      kursus: d.kursus, tarikh: d.tarikh,
+      peranan: perananLabel || "Pengajar",
+      jam: jam, peserta: pes
+    });
+  }
+
+  // Kemaskini KPI
+  var pctJam     = TARGET_JAM     > 0 ? Math.min(100, Math.round(totalJam     / TARGET_JAM     * 100)) : 0;
+  var pctPeserta = TARGET_PESERTA > 0 ? Math.min(100, Math.round(totalPeserta / TARGET_PESERTA * 100)) : 0;
+
+  document.getElementById("jamCurrent").textContent  = totalJam;
+  document.getElementById("jamBar").style.width      = pctJam + "%";
+  document.getElementById("jamPct").textContent      = pctJam + "% tercapai";
+  document.getElementById("jamBaki").textContent     = "Baki " + Math.max(0, TARGET_JAM - totalJam) + " jam";
+  var jb = document.getElementById("jamBadge");
+  if (pctJam >= 100) { jb.textContent = "&#10003; Tercapai"; jb.className = "badge ok"; }
+  else { jb.textContent = "\u26a0 Belum tercapai"; jb.className = "badge warn"; }
+
+  document.getElementById("pesertaCurrent").textContent = totalPeserta;
+  document.getElementById("pesertaBar").style.width     = pctPeserta + "%";
+  document.getElementById("pesertaPct").textContent     = pctPeserta + "% tercapai";
+  document.getElementById("pesertaBaki").textContent    = "Baki " + Math.max(0, TARGET_PESERTA - totalPeserta) + " orang";
+  var pb = document.getElementById("pesertaBadge");
+  if (pctPeserta >= 100) { pb.textContent = "&#10003; Tercapai"; pb.className = "badge ok"; }
+  else { pb.textContent = "\u26a0 Belum tercapai"; pb.className = "badge warn"; }
+
+  document.getElementById("kursusCount").textContent = totalKursus;
+
+  document.getElementById("jamPengajar").textContent    = jamP  + " jam";
+  document.getElementById("pesertaPengajar").textContent= pesertaP + " peserta";
+  document.getElementById("jamPembantu").textContent    = jamPb + " jam";
+  document.getElementById("pesertaPembantu").textContent= pesertaPb + " peserta";
+  document.getElementById("jamUrus").textContent        = jamU  + " jam";
+  document.getElementById("pesertaUrus").textContent    = pesertaU + " peserta";
+
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  var tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  var total = filteredData.length;
+  var start = (currentPage - 1) * ROWS_PER_PAGE;
+  var end   = Math.min(start + ROWS_PER_PAGE, total);
+
+  for (var i = start; i < end; i++) {
+    var d = filteredData[i];
+    var cls = d.peranan === "Tenaga Pengajar" ? "p1" : (d.peranan === "Pembantu Pengajar" ? "p2" : "p3");
+    var tr = "<tr><td>" + d.kursus + "</td><td>" + d.tarikh + "</td><td><span class='pill " + cls + "'>" + d.peranan + "</span></td><td>" + d.jam + "</td><td>" + d.peserta + "</td></tr>";
+    tbody.innerHTML += tr;
+  }
+
+  // Page info
+  if (total === 0) {
+    document.getElementById("pageInfo").textContent = "Tiada rekod dijumpai";
+  } else {
+    document.getElementById("pageInfo").textContent = "Paparan " + (start+1) + "\u2013" + end + " daripada " + total + " kursus";
+  }
+
+  // Pager
+  var totalPages = Math.ceil(total / ROWS_PER_PAGE);
+  var pager = document.getElementById("pager");
+  pager.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  var prev = "<a class='pg" + (currentPage===1?" disabled":"") + "' href='#' onclick='goPage(" + (currentPage-1) + ");return false;'>&#8249;</a>";
+  pager.innerHTML += prev;
+  for (var p = 1; p <= totalPages; p++) {
+    pager.innerHTML += "<a class='pg" + (p===currentPage?" on":"") + "' href='#' onclick='goPage(" + p + ");return false;'>" + p + "</a>";
+  }
+  var next = "<a class='pg" + (currentPage===totalPages?" disabled":"") + "' href='#' onclick='goPage(" + (currentPage+1) + ");return false;'>&#8250;</a>";
+  pager.innerHTML += next;
+}
+
+function goPage(p) {
+  var total = filteredData.length;
+  var totalPages = Math.ceil(total / ROWS_PER_PAGE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+}
+
+function muatTurunLaporan() {
+  var pensyarah = document.getElementById("filterPensyarah").value;
+  var nama = getDisplayName(pensyarah);
+  var tarikh = new Date();
+  var tarikhStr = tarikh.getDate() + "-" + (tarikh.getMonth()+1) + "-" + tarikh.getFullYear();
+
+  // Bina kandungan CSV
+  var csv = "";
+
+  // Tajuk laporan
+  csv += "LAPORAN KPI PSH 2026\r\n";
+  csv += "Pensyarah:," + nama + "\r\n";
+  csv += "Tarikh Laporan:," + tarikhStr + "\r\n";
+  csv += "\r\n";
+
+  // Ringkasan KPI
+  csv += "RINGKASAN PENCAPAIAN\r\n";
+  csv += "Perkara,Dicapai,Sasaran,Peratus\r\n";
+
+  var totalJam = 0, totalPeserta = 0, totalKursus = filteredData.length;
+  for (var i = 0; i < filteredData.length; i++) {
+    totalJam     += filteredData[i].jam;
+    totalPeserta += filteredData[i].peserta;
+  }
+  var pctJam     = TARGET_JAM     > 0 ? Math.round(totalJam     / TARGET_JAM     * 100) : 0;
+  var pctPeserta = TARGET_PESERTA > 0 ? Math.round(totalPeserta / TARGET_PESERTA * 100) : 0;
+
+  csv += "Jam Mengajar/Mengurus," + totalJam + "," + TARGET_JAM + "," + pctJam + "%\r\n";
+  csv += "Jumlah Peserta," + totalPeserta + "," + TARGET_PESERTA + "," + pctPeserta + "%\r\n";
+  csv += "Kursus Disertai," + totalKursus + ",,\r\n";
+  csv += "\r\n";
+
+  // Rekod kursus
+  csv += "REKOD KURSUS\r\n";
+  csv += "Bil,Nama Kursus,Tarikh,Peranan,Jam,Peserta\r\n";
+  for (var j = 0; j < filteredData.length; j++) {
+    var d = filteredData[j];
+    var namaKursus = '"' + d.kursus.replace(/"/g, '""') + '"';
+    csv += (j+1) + "," + namaKursus + "," + d.tarikh + "," + d.peranan + "," + d.jam + "," + d.peserta + "\r\n";
+  }
+
+  // Guna window.open untuk buka dalam tab baru — serasi Google Sites sandbox
+  var namaFail = "Laporan_KPI_PSH_" + nama.replace(/\s+/g, "_") + "_" + tarikhStr + ".csv";
+  var dataUri = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  var a = document.createElement("a");
+  a.setAttribute("href", dataUri);
+  a.setAttribute("download", namaFail);
+  a.setAttribute("target", "_blank");
+  a.setAttribute("rel", "noopener");
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); }, 100);
+}
+
+// Sambung butang muat turun
+document.getElementById("btnCetak").onclick = function(e) {
+  e.preventDefault();
+  muatTurunLaporan();
+};
+
+// Muat pada permulaan
+applyFilter();
+</script>
+</body>
+</html>
